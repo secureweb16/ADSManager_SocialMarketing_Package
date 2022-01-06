@@ -114,17 +114,25 @@ class Telegram{
 		$url = $this->base_url 
 			. "/" . $this->access_token
 			. "/sendMessage";
+
+		$message = <<<TEXT
+*** Title Here again***
+*** This is the description of the photo. This could be little long with more characters ***
+<a href="{$$this->message}">Open Link for {$campaign_name}</a>
+<a href="https://moonlaunch.media/wp-content/uploads/2021/12/mobile-4-300x174.png"> ‏ </a>
+TEXT;
 		
 		return Http::post($url, [
 		    'chat_id' => '@banner_test2',
-		    'text' => '<b>'.$campaign_name.'</b>',
+		    'text' => $message,
 		    'parse_mode' => 'html',
-		    'reply_markup' => [
-		    	'inline_keyboard' => [[[
-		    			'text' => 'Open Link for '.$campaign_name,
-		    			'url' => $this->message
-		    	]]]
-		    ]
+		    'disable_web_page_preview' => false
+		    // 'reply_markup' => [
+		    // 	'inline_keyboard' => [[[
+		    // 			'text' => 'Open Link for '.$campaign_name,
+		    // 			'url' => $this->message
+		    // 	]]]
+		    // ]
 		]);
 
 		// return $this->base_url 

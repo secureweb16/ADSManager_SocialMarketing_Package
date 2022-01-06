@@ -1,0 +1,33 @@
+{
+    "name": "secureweb/socialmarketing",
+    "description": "This package is used to handle marketing on different social media platforms Telegram, Facebook, instagram and Twitter.",
+    "authors": [
+        {
+            "name": "Pritpal Kaur",
+            "email": "pritpal.secureweb@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Secureweb\\Socialmarketing\\": "src"
+        }
+    },
+    "require": {},
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Secureweb\\Socialmarketing\\Providers\\SocialMarketingServiceProvider"
+            ],
+            "aliases": {
+                "SocialMarketing": "Secureweb\\Socialmarketing\\Providers\\SocialMarketingServiceProvider"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./packages/SocialMarketing"
+        }
+    ]
+}

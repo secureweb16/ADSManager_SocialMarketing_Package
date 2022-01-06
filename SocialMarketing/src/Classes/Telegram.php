@@ -115,11 +115,13 @@ class Telegram{
 			. "/" . $this->access_token
 			. "/sendMessage";
 
+		$banner_url = "http://adsmanager.moonlaunch.media/300x300.jpg";
+
 		$message = <<<TEXT
-*** Title Here again***
-*** This is the description of the photo. This could be little long with more characters ***
-<a href="{$$this->message}">Open Link for {$campaign_name}</a>
-<a href="https://moonlaunch.media/wp-content/uploads/2021/12/mobile-4-300x174.png"> ‏ </a>
+ADS Manager Moon Launch Media
+This is the customised CPC link, For now this is just for testing.
+<a href="{$this->message}">Open Link for {$campaign_name}</a>
+<a href="{$banner_url}"> ‏ </a>
 TEXT;
 		
 		return Http::post($url, [

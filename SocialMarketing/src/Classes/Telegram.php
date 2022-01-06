@@ -55,12 +55,27 @@ class Telegram{
 		$this->access_token =  config('socialmarketing.telegram.access_token');
 	}
 
+	private function validParametersForMessage(){
+		return [
+			'title',
+			'image',
+			'link',
+			'description'
+		];
+	}
+
 	public function sendRequest(){
+		$input_array_keys = array_keys($this->message);
+
+		$array_size = array_diff($this->validParametersForMessage(),$input_array_keys);
+
+		if(count($array_size) != 0){
+			throw new \Exception('Make sure message parameters have correct values.');
+		}
+
 		switch($this->action){
 			case 'send':
-				$this->response = $this->sendMessage();
-				// print "<pre>";print_r($this->response->json());print "</pre>";exit;
-				// dd($this->response);
+				$this->response = $this->sendPhoto();
 			break;
 
 			case 'delete':
@@ -73,8 +88,10 @@ class Telegram{
 
 
 		#save logs
-		$file_name = date('Ymd') ."-telegram-{$this->advertiser_id}-{$this->telegram_group_id}-" . time();
-		$this->save_logs('telegram', $file_name , $this->response);
+		if(config('socialmarketing.telegram.logs')){
+			$file_name = date('Ymd') ."-telegram-{$this->advertiser_id}-{$this->telegram_group_id}-" . time();
+			$this->save_logs('telegram', $file_name , $this->response);
+		}
 		
 		if($this->response->ok())
 			if($this->action === 'send'){ return $this->parse_success_response(); } else { return $this->parse_delete_response(); }
@@ -107,6 +124,27 @@ class Telegram{
         return ['ok' => true, 'message' => 'Message deleted successfully'];
 	}
 
+	private function sendPhoto(){
+		$campaign_name = get_campaign_name($this->campaigns_id);
+
+		$url = $this->base_url 
+			. "/" . $this->access_token
+			. "/sendPhoto";
+
+			$api_message = <<<TEXT
+{$this->message['title']}
+{$this->message['description']}
+<a href="{$this->message['link']}">Open Link for {$this->message['title']}</a>
+TEXT;
+        
+        return Http::post($url, [
+            'chat_id' => '@banner_test2',
+            'photo' => $this->message['image'],
+            'caption' => $api_message,
+            'parse_mode' => 'html',
+        ]);
+	}
+
 	private function sendMessage(){
 
 		$campaign_name = get_campaign_name($this->campaigns_id);
@@ -115,20 +153,16 @@ class Telegram{
 			. "/" . $this->access_token
 			. "/sendMessage";
 
-		$banner_url = "http://adsmanager.moonlaunch.media/300x300.jpg";
-
-		$message = <<<TEXT
+		$api_message = <<<TEXT
 ADS Manager Moon Launch Media
 This is the customised CPC link, For now this is just for testing.
 <a href="{$this->message}">Open Link for {$campaign_name}</a>
-<a href="{$banner_url}"> ‏ </a>
 TEXT;
 		
 		return Http::post($url, [
 		    'chat_id' => '@banner_test2',
-		    'text' => $message,
+		    'text' => $api_message,
 		    'parse_mode' => 'html',
-		    'disable_web_page_preview' => false
 		    // 'reply_markup' => [
 		    // 	'inline_keyboard' => [[[
 		    // 			'text' => 'Open Link for '.$campaign_name,
@@ -136,12 +170,6 @@ TEXT;
 		    // 	]]]
 		    // ]
 		]);
-
-		// return $this->base_url 
-		// 	. "/" . $this->access_token
-		// 	. "/sendMessage"
-		// 	. "?chat_id=@" . $this->group_channel_id
-		// 	. "&text='". $this->message."'";
 	}
 
 	private function deleteMessage(){

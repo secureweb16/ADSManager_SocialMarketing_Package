@@ -4,7 +4,8 @@ return [
 
 	'telegram' => [
 		'base_url' => 'https://api.telegram.org',
-		'access_token' => 'bot2141555629:AAFjb1-4jMWbvdwXmToyEwQq1rUkoFzWCMA'
+		'access_token' => 'bot2141555629:AAFjb1-4jMWbvdwXmToyEwQq1rUkoFzWCMA',
+		'logs' => false
 	]
 
 ];

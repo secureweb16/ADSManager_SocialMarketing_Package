@@ -65,24 +65,16 @@ class Telegram{
 	}
 
 	public function sendRequest(){
+		$input_array_keys = array_keys($this->message);
+
+		$array_size = array_diff($this->validInputParameters(),$input_array_keys);
+
+		if(count($array_size) != 0){
+			throw new \Exception('Make sure input parameters are correct.');
+		}
 
 		switch($this->action){
 			case 'send':
-				$max_size_description = config('socialmarketing.telegram.api.description_limit');
-				$input_array_keys = array_keys($this->message);
-
-				$array_size = array_diff($this->validInputParameters(),$input_array_keys);
-
-				if(count($array_size) != 0){
-					throw new \Exception('Make sure input parameters are correct.');
-				}
-
-
-				$this->message['description'] = html_entity_decode($this->message['description']);
-
-				if(strlen($this->message['description']>$max_size_description)){
-					throw new \Exception('Character Limit is 1-'.$max_size_description);
-				}
 				$this->response = $this->sendPhoto();
 			break;
 
@@ -212,71 +204,6 @@ TEXT;
     }
 }
 
-send photo response
-
-Array
-(
-    [ok] => 1
-    [result] => Array
-        (
-            [message_id] => 130
-            [from] => Array
-                (
-                    [id] => 5002415190
-                    [is_bot] => 1
-                    [first_name] => Moon Launch Bot
-                    [username] => MoonLaunch_TGBot
-                )
-
-            [chat] => Array
-                (
-                    [id] => -1001628475693
-                    [title] => banner_test4
-                    [username] => banner_test4
-                    [type] => supergroup
-                )
-
-            [date] => 1641540530
-            [photo] => Array
-                (
-                    [0] => Array
-                        (
-                            [file_id] => AgACAgQAAx0EYRCRLQADgmHX67JbwGjfgpGsSzq7EDzz8qy-AAJSrTEbVvbEUo_NhQQYE4YGAQADAgADcwADIwQ
-                            [file_unique_id] => AQADUq0xG1b2xFJ4
-                            [file_size] => 337
-                            [width] => 90
-                            [height] => 90
-                        )
-
-                    [1] => Array
-                        (
-                            [file_id] => AgACAgQAAx0EYRCRLQADgmHX67JbwGjfgpGsSzq7EDzz8qy-AAJSrTEbVvbEUo_NhQQYE4YGAQADAgADbQADIwQ
-                            [file_unique_id] => AQADUq0xG1b2xFJy
-                            [file_size] => 825
-                            [width] => 300
-                            [height] => 300
-                        )
-
-                )
-
-            [caption] => Camapign
-This is a test post
-Open Link for Camapign
-            [caption_entities] => Array
-                (
-                    [0] => Array
-                        (
-                            [offset] => 29
-                            [length] => 22
-                            [type] => text_link
-                            [url] => https://adsmanager.moonlaunch.media/telegram/drsm3p3dAEu5LYO1FMNz7XnzrVgAR0LwWRqqIfEvgviue6DL18/1640256162/2/1/16415405280
-                        )
-
-                )
-
-        )
-
-)
 
 */
 

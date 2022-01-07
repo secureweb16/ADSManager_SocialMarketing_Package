@@ -55,7 +55,7 @@ class Telegram{
 		$this->access_token =  config('socialmarketing.telegram.access_token');
 	}
 
-	private function validParametersForMessage(){
+	private function validInputParameters(){
 		return [
 			'title',
 			'image',
@@ -67,10 +67,10 @@ class Telegram{
 	public function sendRequest(){
 		$input_array_keys = array_keys($this->message);
 
-		$array_size = array_diff($this->validParametersForMessage(),$input_array_keys);
+		$array_size = array_diff($this->validInputParameters(),$input_array_keys);
 
 		if(count($array_size) != 0){
-			throw new \Exception('Make sure message parameters have correct values.');
+			throw new \Exception('Make sure input parameters are correct.');
 		}
 
 		switch($this->action){
@@ -138,7 +138,7 @@ class Telegram{
 TEXT;
         
         return Http::post($url, [
-            'chat_id' => '@banner_test2',
+            'chat_id' => '@'.$this->group_channel_id,
             'photo' => $this->message['image'],
             'caption' => $api_message,
             'parse_mode' => 'html',
@@ -160,7 +160,7 @@ This is the customised CPC link, For now this is just for testing.
 TEXT;
 		
 		return Http::post($url, [
-		    'chat_id' => '@banner_test2',
+		    'chat_id' => '@'.$this->group_channel_id,
 		    'text' => $api_message,
 		    'parse_mode' => 'html',
 		    // 'reply_markup' => [

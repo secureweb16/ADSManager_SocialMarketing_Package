@@ -119,9 +119,13 @@ class Telegram{
 					$publisher_group_name = $result["result"]["chat"]["title"];
 					$confirm_result = $this->confirmWelcomeMessage($publisher_group_name);
 					$confirm_result = $confirm_result->json();
-					return $confirm_result["ok"];
+					if($confirm_result["ok"]){
+						return ["ok" => true, "message" => config('socialmarketing.telegram.verify_bot_success_message')];
+					} else {
+						return $confirm_result->json();
+					}
 				} else {
-					return false;
+					return ["ok" => false, "message" => config('socialmarketing.telegram.verify_bot_error_message')];
 				}
 			}
 		}

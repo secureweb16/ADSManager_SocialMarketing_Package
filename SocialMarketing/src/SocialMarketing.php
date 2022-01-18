@@ -130,7 +130,8 @@ class SocialMarketing{
 	protected function valid_actions(){
 		$this->valid_actions = collect([
 			'send',
-			'delete'
+			'delete',
+			'checkMemberAccess'
 		]);
 		if($this->valid_actions->contains($this->action))
 			return true;

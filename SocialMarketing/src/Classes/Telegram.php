@@ -16,6 +16,7 @@ class Telegram{
 	private $base_url;
 	private $response;
 	private $access_token;
+	private $tg_bot_username;
 	protected $group_channel_id;
 	protected $message;
 	protected $action;
@@ -53,6 +54,7 @@ class Telegram{
 		$this->image_url = $image_url;
 		$this->base_url 	=  config('socialmarketing.telegram.base_url');
 		$this->access_token =  config('socialmarketing.telegram.access_token');
+		$this->tg_bot_username =  config('socialmarketing.telegram.tg_bot_username');
 	}
 
 	private function validInputParameters(){
@@ -90,6 +92,10 @@ class Telegram{
 				$url = $this->deleteMessage();
 				$this->response = Http::get($url);
 			break;
+
+			case 'checkMemberAccess':
+				$this->response = $this->getChatAccessWithWelcomeMessage();
+			break;
 		}
 	
 		// $this->response = Http::get($url);
@@ -101,8 +107,24 @@ class Telegram{
 			$this->save_logs('telegram', $file_name , $this->response);
 		}
 		
-		if($this->response->ok())
-			if($this->action === 'send'){ return $this->parse_success_response(); } else { return $this->parse_delete_response(); }
+		if($this->response->ok()){
+			if($this->action === 'send'){ 
+				return $this->parse_success_response(); 
+			} else if($this->action === 'delete'){
+			 return $this->parse_delete_response(); 
+			} else if($this->action === 'checkMemberAccess') {
+				$result = $this->response->json();
+				$bot_username = $result["result"]["from"]["username"];
+				if($bot_username == $this->tg_bot_username){
+					$publisher_group_name = $result["result"]["chat"]["title"];
+					$confirm_result = $this->confirmWelcomeMessage($publisher_group_name);
+					$confirm_result = $confirm_result->json();
+					return $confirm_result["ok"];
+				} else {
+					return false;
+				}
+			}
+		}
 		
 		return $this->response->json();
 	}
@@ -140,9 +162,9 @@ class Telegram{
 			. "/sendPhoto";
 
 			$api_message = <<<TEXT
-{$this->message['title']}
+<b>{$this->message['title']}</b>
 {$this->message['description']}
-<a href="{$this->message['link']}">Open Link for {$this->message['title']}</a>
+<a href="https://moonlaunch.media/">Ad By Moon Launch Media</a>
 TEXT;
         
         return Http::post($url, [
@@ -150,6 +172,12 @@ TEXT;
             'photo' => $this->message['image'],
             'caption' => $api_message,
             'parse_mode' => 'html',
+            'reply_markup' => [
+		    	'inline_keyboard' => [[[
+		    			'text' => 'Open Link for '.$this->message['title'],
+		    			'url' => $this->message['link']
+		    	]]]
+		    ]
         ]);
 	}
 
@@ -161,22 +189,24 @@ TEXT;
 			. "/" . $this->access_token
 			. "/sendMessage";
 
-		$api_message = <<<TEXT
-ADS Manager Moon Launch Media
-This is the customised CPC link, For now this is just for testing.
-<a href="{$this->message}">Open Link for {$campaign_name}</a>
+$api_message = <<<TEXT
+<b>{$this->message['title']}</b>
+<a href="{$this->message['image']}">&#8205;</a>
+{$this->message['description']}
+<a href="https://moonlaunch.media">Ad By Moon Launch Media</a>
 TEXT;
 		
 		return Http::post($url, [
 		    'chat_id' => '@'.$this->group_channel_id,
 		    'text' => $api_message,
 		    'parse_mode' => 'html',
-		    // 'reply_markup' => [
-		    // 	'inline_keyboard' => [[[
-		    // 			'text' => 'Open Link for '.$campaign_name,
-		    // 			'url' => $this->message
-		    // 	]]]
-		    // ]
+		    'reply_markup' => [
+		    	'inline_keyboard' => [[[
+		    			'text' => 'Open Link for '.$this->message['title'],
+		    			'url' => $this->message['link']
+		    	]]]
+		    ],
+		    'disable_web_page_preview' => false
 		]);
 	}
 
@@ -186,6 +216,50 @@ TEXT;
 			. "/deleteMessage"
 			. "?chat_id=@" . $this->group_channel_id
 			. "&message_id=" . $this->message_id;
+	}
+
+	private function getChatMemberAccess(){
+		$url = $this->base_url 
+			. "/" . $this->access_token
+			. "/getChatMember";
+
+		return Http::post($url, [
+		    'chat_id' => '@'.$this->group_channel_id,
+		    'user_id' => $this->tg_user_id
+		]);
+	}
+
+	private function getChatAccessWithWelcomeMessage(){
+		$url = $this->base_url 
+			. "/" . $this->access_token
+			. "/sendMessage";
+
+		$api_message = <<<TEXT
+You have successfully initiated the request to add <b>Moon Launch Bot</b> to your group. We will get back to you after confirmation.
+TEXT;
+
+		return Http::post($url, [
+		    'chat_id' => '@'.$this->group_channel_id,
+		    'text' => $api_message,
+		    'parse_mode' => 'html'
+		]);
+	}
+
+	private function confirmWelcomeMessage($publisher_group_name){
+		$url = $this->base_url 
+			. "/" . $this->access_token
+			. "/sendMessage";
+
+		$api_message = <<<TEXT
+<b>Congratulations!!</b>
+You have successfully added the <b>Moon Launch Bot</b> bot to your group {$publisher_group_name}.
+TEXT;
+
+		return Http::post($url, [
+		    'chat_id' => '@'.$this->group_channel_id,
+		    'text' => $api_message,
+		    'parse_mode' => 'html'
+		]);
 	}
 }
 

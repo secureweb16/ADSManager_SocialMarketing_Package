@@ -113,20 +113,7 @@ class Telegram{
 			} else if($this->action === 'delete'){
 			 return $this->parse_delete_response(); 
 			} else if($this->action === 'checkMemberAccess') {
-				$result = $this->response->json();
-				$bot_username = $result["result"]["from"]["username"];
-				if($bot_username == $this->tg_bot_username){
-					$publisher_group_name = $result["result"]["chat"]["title"];
-					$confirm_result = $this->confirmWelcomeMessage($publisher_group_name);
-					$confirm_result = $confirm_result->json();
-					if($confirm_result["ok"]){
-						return ["ok" => true, "message" => config('socialmarketing.telegram.verify_bot_success_message')];
-					} else {
-						return $confirm_result->json();
-					}
-				} else {
-					return ["ok" => false, "message" => config('socialmarketing.telegram.verify_bot_error_message')];
-				}
+				$this->process_checkMemberAccess();
 			}
 		}
 		
@@ -158,6 +145,49 @@ class Telegram{
         return ['ok' => true, 'message' => 'Message deleted successfully'];
 	}
 
+	private function process_checkMemberAccess(){
+		$result = $this->response->json();
+		if(!$result["ok"]) throw new \Exception('Laravel Package: API configuration is missing.');
+		$bot_username = "";
+		$publisher_group_name = "";
+		/**
+		 * To send message through bot to Telegram Channel, The response has
+		 * "sender_chat" array child
+		 * So to cehck channel type
+		 */
+		if(isset($result["result"]["sender_chat"]) and 
+		$result["result"]["sender_chat"]["type"] == "channel"){
+			$channel_administrator_result = $this->getChatAdministrators();
+			if(isset($channel_administrator_result["ok"])){
+				foreach($channel_administrator_result["result"] as $user){
+					if($user["status"] == "administrator" && $user["user"]["is_bot"] == true){
+						$bot_username = $user["user"]["username"];
+						$publisher_group_name = $result["result"]["chat"]["title"];
+						break;
+					}
+				}
+			}
+		} else{
+			/**
+			 * The message is from telegram group
+			 */
+			$bot_username = $result["result"]["from"]["username"];
+			$publisher_group_name = $result["result"]["chat"]["title"];
+			
+		}//else closed
+		if($bot_username == $this->tg_bot_username){
+			$confirm_result = $this->confirmWelcomeMessage($publisher_group_name);
+			$confirm_result = $confirm_result->json();
+			if($confirm_result["ok"]){
+				return ["ok" => true, "message" => config('socialmarketing.telegram.verify_bot_success_message')];
+			} else {
+				return $confirm_result->json();
+			}
+		} else {
+			return ["ok" => false, "message" => config('socialmarketing.telegram.verify_bot_error_message')];
+		}
+	}
+
 	private function sendPhoto(){
 		$campaign_name = get_campaign_name($this->campaigns_id);
 
@@ -178,7 +208,7 @@ TEXT;
             'parse_mode' => 'html',
             'reply_markup' => [
 		    	'inline_keyboard' => [[[
-		    			'text' => 'Open Link for '.$this->message['title'],
+		    			'text' => $this->message['btntxt'],
 		    			'url' => $this->message['link']
 		    	]]]
 		    ]
@@ -222,16 +252,17 @@ TEXT;
 			. "&message_id=" . $this->message_id;
 	}
 
-	private function getChatMemberAccess(){
-		$url = $this->base_url 
-			. "/" . $this->access_token
-			. "/getChatMember";
+	// this function is no longer in use, code is broken for few vars
+	// private function getChatMemberAccess(){
+	// 	$url = $this->base_url 
+	// 		. "/" . $this->access_token
+	// 		. "/getChatMember";
 
-		return Http::post($url, [
-		    'chat_id' => '@'.$this->group_channel_id,
-		    'user_id' => $this->tg_user_id
-		]);
-	}
+	// 	return Http::post($url, [
+	// 	    'chat_id' => '@'.$this->group_channel_id,
+	// 	    'user_id' => $this->tg_user_id
+	// 	]);
+	// }
 
 	private function getChatAccessWithWelcomeMessage(){
 		$url = $this->base_url 
@@ -239,7 +270,7 @@ TEXT;
 			. "/sendMessage";
 
 		$api_message = <<<TEXT
-You have successfully initiated the request to add <b>Moon Launch Bot</b> to your group. We will get back to you after confirmation.
+You have successfully initiated the request to add <b>Moon Launch Bot</b> to your group/channel. We will get back to you after confirmation.
 TEXT;
 
 		return Http::post($url, [
@@ -256,7 +287,7 @@ TEXT;
 
 		$api_message = <<<TEXT
 <b>Congratulations!!</b>
-You have successfully added the <b>Moon Launch Bot</b> bot to your group {$publisher_group_name}.
+You have successfully added the <b>Moon Launch Bot</b> bot to your group/channel {$publisher_group_name}.
 TEXT;
 
 		return Http::post($url, [
@@ -265,10 +296,20 @@ TEXT;
 		    'parse_mode' => 'html'
 		]);
 	}
+
+	private function getChatAdministrators(){
+		$url = $this->base_url 
+			. "/" . $this->access_token
+			. "/getChatAdministrators";
+
+		return Http::post($url, [
+		    'chat_id' => '@'.$this->group_channel_id
+		]);
+	}
 }
 
 /*
-
+//Group Message Reponse
 {
     "ok": true,
     "result": {
@@ -287,6 +328,27 @@ TEXT;
         },
         "date": 1637753198,
         "text": "This is demo test"
+    }
+}
+//Channel Message Response
+{
+    "ok": true,
+    "result": {
+        "message_id": 5,
+        "sender_chat": {
+            "id": -1001744338326,
+            "title": "Secureweb Channel",
+            "username": "secureweb_pritpal",
+            "type": "channel"
+        },
+        "chat": {
+            "id": -1001744338326,
+            "title": "Secureweb Channel",
+            "username": "secureweb_pritpal",
+            "type": "channel"
+        },
+        "date": 1642740490,
+        "text": "This is the santosh."
     }
 }
 
